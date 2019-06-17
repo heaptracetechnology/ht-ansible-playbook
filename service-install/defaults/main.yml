@@ -1,0 +1,7 @@
+---
+docker_compose_version_min: 1.24.0
+docker_version_min: 18.06.1-ce
+angular_cli_version_min: 8.0.3
+npm_version_min: 6.0.5
+git_version_min: 2.7.4
+

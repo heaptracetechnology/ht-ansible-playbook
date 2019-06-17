@@ -1,0 +1,126 @@
+#
+# Copyright (C) 2019-2020 Heaptrace Technology
+#
+
+-
+  name: Playbook for services installations
+  hosts: localhost
+  vars:
+   - docker_compose_version_min: 1.24.0
+   - docker_min_version: 18.06.1-ce
+   - angular_cli_version_min: 8.0.3
+   - npm_version_min: 6.0.5
+   - git_version_min: 2.7.4
+   - git_code_location: ../files/
+  tasks:
+
+     ##Check JAVA version 
+    - name: Fetch Java version
+      shell: java -version 2>&1 | grep version | awk '{print $3}' | sed 's/"//g'
+      register: java_version
+
+     ##Check Git version 
+    - name: Fetch NPM version
+      shell: git --version | awk '{print $3}'
+      register: git_version
+
+     ##Check NPM version 
+    - name: Fetch NPM version
+      shell: 'npm --version'
+      register: npm_version
+
+     ## Check Angular Cli Version
+    - name: Fetch Angular CLI version
+      shell: ng version | grep Angular | head -n 1 | awk '{print $3}'
+      register: angular_version
+
+     ## Check Docker version
+    - name: Fetch Docker version
+      shell: docker --version | awk '{print $3}'| sed 's/.$//'
+      register: docker_version
+
+     ## Check Docker-compose version
+    - name: Fetch Docker-compose version
+      shell: docker-compose version | grep docker-compose | awk '{print $3}' | sed 's/.$//'
+      register: docker_compose_version
+
+     ##Install Git if not present
+    - name: Install Git
+      apt:
+        name: git
+        state: present
+        update_cache: yes
+      register: git_install
+      when: git_version is not defined or git_version is not version(git_version_min, '>=')
+
+     ##Install Docker if not present
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: present
+        update_cache: yes
+      when: docker_version is not defined or docker_version is not version(docker_min_version, '>=')
+
+     ##Install Docker-Compose if not present
+    - name: Install Docker Compose
+      apt:
+        name: docker-compose
+        state: present
+        update_cache: yes
+      when: docker_compose_version is not defined or docker_compose_version is not version(docker_compose_version_min, '>=')
+
+     ##Install Angular CLI if not installed
+    - name: Install Angular CLI
+      shell: npm install -g @angular/cli
+      when: angular_version is not defined or angular_version is not version(angular_cli_version_min, '>=')
+
+     ##Clean old code before git pull.
+    - name: Clean local code before git pull
+      file:
+        state: absent
+        path: '{{git_code_location}}/'
+
+     ##Git clone of the project
+    - name: Node-App = Git pull node app
+      git:
+       repo: 'https://github.com/heaptracetechnology/ht-node-app.git'
+       dest: '{{git_code_location}}/ht-node-app'
+       clone: yes
+      become_user: root
+
+    ##Git clone of the project
+    - name: angular app = Git pull 
+      git:
+       repo: 'https://github.com/heaptracetechnology/ht-angular-app.git'
+       dest: '{{git_code_location}}/ht-angular-app'
+       clone: yes
+      become_user: root
+
+    ##Git clone of the project
+    - name: Docker-compose = Git pull 
+      git:
+       repo: 'https://github.com/heaptracetechnology/ht-compose.git'
+       dest: '{{git_code_location}}/ht-compose'
+       clone: yes
+      become_user: root
+
+    ##Angular-app install dependancy
+    - name: Install angular dependancy
+      command: sudo npm install
+      args:
+        chdir: '{{git_code_location}}/ht-angular-app/'
+      become_user: root
+
+    ##Angular-app build
+    - name: Build angular application
+      command: sudo ng build
+      args:
+        chdir: '{{git_code_location}}/ht-angular-app/'
+      become_user: root
+
+    ##Docker compose
+    - name: run docker-compose
+      command: docker-compose up -d --build
+      args:
+        chdir: '{{git_code_location}}/ht-compose/'
+      become_user: root

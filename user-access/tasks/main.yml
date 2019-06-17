@@ -1,0 +1,56 @@
+#
+# Copyright (C) 2019-2020 Heaptrace Technology
+#
+-
+  name: User access Management
+  hosts: localhost
+  vars:
+    - USER_DEV: "dev5"
+    - PUBLIC_KEY_DEV: '../files/dev.pub'
+    - USER_ADMIN: "admin5"
+    - PUBLIC_KEY_ADMIN: '../files/admin.pub'
+
+  tasks:
+    ##Install OpenSSH server
+    - name: Install OpenSSH server
+      apt:
+        name: openssh-server
+        state: "present"  
+
+    ##Add dev user with limited privillage
+    - name: Add the user 'dev'
+      user:
+        name: '{{ USER_DEV }}'
+        append: yes
+
+    - name: Set authorized key for user from file
+      authorized_key:
+        user: '{{ USER_DEV }}'
+        state: present
+        key: "{{ lookup('file', '{{ PUBLIC_KEY_DEV }}') }}"
+   
+    - name: Disable password login for user
+      lineinfile: dest=/etc/ssh/sshd_config regexp="^(#\s*)?PasswordAuthentication " line="PasswordAuthentication no"
+   
+    ##Add admin user with all privillage
+    - name: Add the user 'admin'
+      user:
+        name: '{{USER_ADMIN}}'
+        append: yes
+
+    - name: Set authorized key for admin from file
+      authorized_key:
+        user: '{{ USER_ADMIN }}'
+        state: present
+        key: "{{ lookup('file', '{{ PUBLIC_KEY_ADMIN }}') }}"
+
+    - name: Disable password login for user
+      lineinfile: dest=/etc/ssh/sshd_config regexp="^(#\s*)?PasswordAuthentication " line="PasswordAuthentication no"
+      notify: restart sshd
+
+    - name: set root privillages
+      lineinfile:
+        path: /etc/sudoers
+        line: '{{USER_ADMIN}} ALL=(ALL)NOPASSWD:ALL'
+        insertbefore: EOF
+      become_user: root
