@@ -5,9 +5,9 @@
   name: User access Management
   hosts: localhost
   vars:
-    - USER_DEV: "dev5"
+    - USER_DEV: "dev"
     - PUBLIC_KEY_DEV: '../files/dev.pub'
-    - USER_ADMIN: "admin5"
+    - USER_ADMIN: "admin"
     - PUBLIC_KEY_ADMIN: '../files/admin.pub'
 
   tasks:
